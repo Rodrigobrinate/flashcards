@@ -16,7 +16,17 @@ body {
     border-radius: 8px;
     box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
+/* ... (código anterior) ... */
 
+#ankiBtn {
+    background-color: #0073b1; /* Um azul diferente, cor parecida com a do Anki */
+}
+
+#ankiBtn:hover {
+    background-color: #005b8e;
+}
+
+/* ... (estilos de @media print) ... */
 h1 {
     color: #0056b3;
     text-align: center;
