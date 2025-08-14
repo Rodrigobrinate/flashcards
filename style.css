@@ -1,0 +1,153 @@
+/* Estilos Gerais e para a tela */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    background-color: #f4f7f6;
+    color: #333;
+    line-height: 1.6;
+    margin: 0;
+    padding: 20px;
+}
+
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+h1 {
+    color: #0056b3;
+    text-align: center;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+input[type="text"],
+input[type="password"] {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box; /* Garante que o padding não afete a largura total */
+}
+
+button {
+    display: inline-block;
+    background-color: #007bff;
+    color: white;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    margin-right: 10px;
+    transition: background-color 0.3s;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+#imprimirBtn {
+    background-color: #28a745;
+}
+
+#imprimirBtn:hover {
+    background-color: #1e7e34;
+}
+
+.hidden {
+    display: none;
+}
+
+/* Animação de Carregamento */
+#loading {
+    text-align: center;
+    margin-top: 20px;
+}
+.spinner {
+    border: 4px solid rgba(0, 0, 0, 0.1);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border-left-color: #007bff;
+    animation: spin 1s ease infinite;
+    margin: 0 auto 10px;
+}
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+
+/* Área de Impressão e Flashcards */
+.printable-area {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* 2 colunas */
+    gap: 15px; /* Espaço entre os cards */
+    max-width: 210mm; /* Largura de uma folha A4 */
+    margin: 20px auto 0;
+}
+
+.flashcard {
+    background-color: #fff;
+    border: 2px dashed #333; /* Borda destacável/recortável */
+    padding: 15px;
+    height: 95mm; /* Altura aproximada para caber 5 por coluna em A4 */
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    page-break-inside: avoid; /* Evita que o card seja cortado entre páginas */
+}
+
+.flashcard .frente {
+    font-size: 1.1em;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.flashcard .verso {
+    font-size: 1em;
+    border-top: 1px solid #ccc;
+    padding-top: 10px;
+    height: 100%;
+}
+
+
+/* Estilos específicos para Impressão */
+@media print {
+    /* Esconde tudo que não deve ser impresso */
+    .no-print {
+        display: none;
+    }
+
+    /* Garante que a área de impressão ocupe o espaço */
+    body {
+        margin: 0;
+        padding: 5mm;
+        background-color: #fff;
+    }
+
+    .printable-area {
+        max-width: 100%;
+        margin: 0;
+        gap: 10px;
+    }
+
+    .flashcard {
+        border: 2px dashed #000;
+        height: max-content; /* Altura se ajusta ao conteúdo na impressão */
+        //*min-height: max-content;*/
+    }
+}
