@@ -5,11 +5,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const temaInput = document.getElementById('temaInput');
     const gerarBtn = document.getElementById('gerarBtn');
     const imprimirBtn = document.getElementById('imprimirBtn');
+    const ankiBtn = document.getElementById('ankiBtn'); // Novo botão Anki
     const loadingDiv = document.getElementById('loading');
     const flashcardsContainer = document.getElementById('flashcardsContainer');
 
     // Chave para armazenar a API Key no localStorage
     const LOCAL_STORAGE_API_KEY = 'geminiApiKey';
+    
+    // Variável para armazenar os cards gerados
+    let generatedCards = [];
 
     // Função para carregar a chave da API do localStorage
     const carregarChaveApi = () => {
@@ -24,11 +28,9 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem(LOCAL_STORAGE_API_KEY, key);
     };
     
-    // Função para chamar a API do Gemini (VERSÃO CORRIGIDA)
+    // Função para chamar a API do Gemini
     const gerarFlashcardsComGemini = async (tema, apiKey) => {
-        // Endpoint da API para o modelo Gemini Pro
         const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-
         const prompt = `
             Você é um assistente educacional. Crie exatamente 10 flashcards sobre o tema "${tema}".
             Cada flashcard deve ter uma pergunta/termo (frente) e uma resposta/definição (verso).
@@ -49,98 +51,114 @@ document.addEventListener('DOMContentLoaded', () => {
               ]
             }
         `;
-
         try {
             const response = await fetch(url, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    contents: [{
-                        parts: [{ text: prompt }]
-                    }]
-                })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
             });
-
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(`Erro na API: ${errorData.error.message}`);
             }
-
             const data = await response.json();
             const rawText = data.candidates[0].content.parts[0].text;
-
-            // --- INÍCIO DA CORREÇÃO ---
-            // Alguns modelos (como o flash) retornam o JSON dentro de um bloco de código Markdown.
-            // Esta linha remove o "```json" do início e o "```" do final.
             const cleanedJsonText = rawText.replace(/^```json\s*|\s*```$/g, '');
-            // --- FIM DA CORREÇÃO ---
-
-            // Agora usamos o texto limpo para fazer o parse
             const parsedJson = JSON.parse(cleanedJsonText);
             return parsedJson.flashcards;
-
         } catch (error) {
             console.error('Falha ao gerar flashcards:', error);
-            alert(`Ocorreu um erro: ${error.message}. Verifique sua chave de API, a resposta do modelo e a conexão com a internet.`);
+            alert(`Ocorreu um erro: ${error.message}. Verifique sua chave de API e a conexão.`);
             return null;
         }
     };
 
-
     // Função para exibir os flashcards na página
     const exibirFlashcards = (cards) => {
-        flashcardsContainer.innerHTML = ''; // Limpa o conteúdo anterior
+        flashcardsContainer.innerHTML = ''; 
         if (!cards || cards.length === 0) {
             flashcardsContainer.innerHTML = '<p>Não foi possível gerar os flashcards.</p>';
             return;
         }
-
         cards.forEach(card => {
             const cardElement = document.createElement('div');
             cardElement.classList.add('flashcard');
-
-            // Adiciona o conteúdo do flashcard
             cardElement.innerHTML = `
                 <div class="frente">${card.frente}</div>
                 <div class="verso">${card.verso}</div>
             `;
-
             flashcardsContainer.appendChild(cardElement);
         });
     };
+    
+    // --- NOVA FUNÇÃO PARA EXPORTAR PARA O ANKI ---
+    const exportarParaAnki = () => {
+        if (generatedCards.length === 0) {
+            alert("Nenhum card para exportar. Gere os flashcards primeiro.");
+            return;
+        }
 
+        // Usamos ponto e vírgula como separador, que é um padrão comum e seguro.
+        const separador = ';';
+        
+        // Converte cada card para uma linha do CSV
+        const csvRows = generatedCards.map(card => {
+            // Para evitar quebras no CSV, colocamos os campos entre aspas duplas
+            // e substituímos aspas duplas internas por duas aspas duplas.
+            const frente = `"${card.frente.replace(/"/g, '""')}"`;
+            const verso = `"${card.verso.replace(/"/g, '""')}"`;
+            return `${frente}${separador}${verso}`;
+        });
+
+        // Junta todas as linhas com uma quebra de linha
+        const csvContent = csvRows.join('\n');
+
+        // Cria um objeto Blob para o arquivo
+        // \uFEFF é o BOM (Byte Order Mark) para garantir que o UTF-8 seja reconhecido corretamente
+        const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+        
+        // Cria um link temporário para iniciar o download
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        
+        // Cria um nome de arquivo dinâmico
+        const temaDoArquivo = temaInput.value.trim().replace(/\s+/g, '_').toLowerCase();
+        link.setAttribute("download", `flashcards_${temaDoArquivo || 'export'}.csv`);
+        link.style.visibility = 'hidden';
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
 
     // Event listener para o botão de gerar
     gerarBtn.addEventListener('click', async () => {
         const tema = temaInput.value.trim();
         const apiKey = apiKeyInput.value.trim();
-
         if (!tema || !apiKey) {
             alert('Por favor, preencha o tema e a sua chave de API.');
             return;
         }
-
-        // Salva a chave da API para uso futuro
         salvarChaveApi(apiKey);
-
-        // Atualiza a interface para o estado de carregamento
+        
         loadingDiv.classList.remove('hidden');
         gerarBtn.disabled = true;
         imprimirBtn.classList.add('hidden');
+        ankiBtn.classList.add('hidden'); // Esconde o botão Anki
         flashcardsContainer.innerHTML = '';
+        generatedCards = []; // Limpa os cards antigos
 
-        // Chama a função principal
         const flashcards = await gerarFlashcardsComGemini(tema, apiKey);
 
-        // Esconde o carregamento e reativa o botão
         loadingDiv.classList.add('hidden');
         gerarBtn.disabled = false;
 
         if (flashcards) {
+            generatedCards = flashcards; // Armazena os cards gerados
             exibirFlashcards(flashcards);
-            imprimirBtn.classList.remove('hidden'); // Mostra o botão de imprimir
+            imprimirBtn.classList.remove('hidden');
+            ankiBtn.classList.remove('hidden'); // Mostra o botão Anki
         }
     });
 
@@ -148,6 +166,9 @@ document.addEventListener('DOMContentLoaded', () => {
     imprimirBtn.addEventListener('click', () => {
         window.print();
     });
+    
+    // Event listener para o novo botão Anki
+    ankiBtn.addEventListener('click', exportarParaAnki);
 
     // Carrega a chave da API ao iniciar a página
     carregarChaveApi();
