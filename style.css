@@ -103,7 +103,7 @@ button:hover {
     background-color: #fff;
     border: 2px dashed #333; /* Borda destacável/recortável */
     padding: 15px;
-    height: 95mm; /* Altura aproximada para caber 5 por coluna em A4 */
+    height: max-content; /* Altura aproximada para caber 5 por coluna em A4 */
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
